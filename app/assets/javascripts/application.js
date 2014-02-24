@@ -14,4 +14,12 @@
 //= require jquery_ujs
 //= require twitter/bootstrap
 //= require turbolinks
-//= require_tree .
+//= require jquery
+//= require handlebars
+//= require ember
+//= require ember-data
+//= require_self
+//= require aflt1
+
+// for more details see: http://emberjs.com/guides/application/
+AFLT1 = Ember.Application.create();

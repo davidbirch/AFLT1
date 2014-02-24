@@ -13,7 +13,8 @@ gem 'sass-rails', '~> 4.0.0'
 gem 'uglifier', '>= 1.3.0'
 
 # Use CoffeeScript for .js.coffee assets and views
-gem 'coffee-rails', '~> 4.0.0'
+# Don't use coffeeScript for Ember
+#gem 'coffee-rails', '~> 4.0.0'
 
 # See https://github.com/sstephenson/execjs#readme for more supported runtimes
 gem 'therubyracer', platforms: :ruby
@@ -44,6 +45,9 @@ end
 # Use debugger
 # gem 'debugger', group: [:development, :test]
 
-# Use twitter bootstrap
-gem "less-rails" #Sprockets (what Rails 3.1 uses for its asset pipeline) supports LESS
-gem "twitter-bootstrap-rails"
+# Use Twitter Bootstrap
+gem 'less-rails'
+gem 'twitter-bootstrap-rails'
+
+# Use Ember
+gem 'ember-rails'
