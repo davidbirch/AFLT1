@@ -10,60 +10,101 @@
 //= require_tree ./routes
 //= require_self
 
-var posts = [{
-  id: '1',
-  title: "Rails is Omakase",
-  author: { name: "d2h" },
-  date: new Date('12-27-2012'),
-  excerpt: "There are lots of à la carte software environments in this world. Places where in order to eat, you must first carefully look over the menu of options to order exactly what you want.",
-  body: "I want this for my ORM, I want that for my template language, and let's finish it off with this routing library. Of course, you're going to have to know what you want, and you'll rarely have your horizon expanded if you always order the same thing, but there it is. It's a very popular way of consuming software.\n\nRails is not that. Rails is omakase."
-}, {
-  id: '2',
-  title: "The Parley Letter",
-  author: { name: "d2h" },
-  date: new Date('12-24-2012'),
-  excerpt: "My [appearance on the Ruby Rogues podcast](http://rubyrogues.com/056-rr-david-heinemeier-hansson/) recently came up for discussion again on the private Parley mailing list.",
-  body: "A long list of topics were raised and I took a time to ramble at large about all of them at once. Apologies for not taking the time to be more succinct, but at least each topic has a header so you can skip stuff you don't care about.\n\n### Maintainability\n\nIt's simply not true to say that I don't care about maintainability. I still work on the oldest Rails app in the world."  
-}];
-
-AFLT1.Router.map(function() {
-  this.resource('about');
-  this.resource('posts', function() {
-    this.resource('post', { path: ':post_id' });
-  });
+AFLT1.Post = DS.Model.extend({
+  title: DS.attr("string"),
+  author: DS.attr("string"),
+  intro: DS.attr("string"),
+  extended: DS.attr("string"),
+  publishedAt: DS.attr("date")
 });
 
 AFLT1.PostsRoute = Ember.Route.extend({
   model: function() {
-    return posts;
+    return AFLT1.Post.find();
   }
 });
 
-AFLT1.PostRoute = Ember.Route.extend({
-  model: function(params) {
-    return posts.findBy('id', params.post_id);
+AFLT1.PostsController = Ember.ArrayController.extend({
+  sortProperties: ["id"],
+  sortAscending: false,
+  filteredContent: (function() {
+    var content;
+    content = this.get("arrangedContent");
+    return content.filter(function(item, index) {
+      return !(item.get("isNew"));
+    });
+  }).property("arrangedContent.@each")
+});
+
+AFLT1.PostsNewRoute = Ember.Route.extend({
+  model: function() {
+    return AFLT1.Post.createRecord({
+      publishedAt: new Date(),
+      author: "current user"
+    });
   }
+});
+
+AFLT1.PostsNewController = Ember.ObjectController.extend({
+  save: function() {
+    return this.get('store').commit();
+  },
+  cancel: function() {
+    this.get('content').deleteRecord();
+    this.get('store').transaction().rollback();
+    return this.transitionToRoute('posts');
+  },
+  transitionAfterSave: (function() {
+    if (this.get('content.id')) {
+      return this.transitionToRoute('post', this.get('content'));
+    }
+  }).observes('content.id')
 });
 
 AFLT1.PostController = Ember.ObjectController.extend({
   isEditing: false,
-
-  edit: function() {
-    this.set('isEditing', true);
-  },
-
-  doneEditing: function() {
-    this.set('isEditing', false);
-    this.get('store').commit();
+  actions: {
+    edit: function() {
+      return this.set("isEditing", true);
+    },
+    "delete": function() {
+      if (window.confirm("Are you sure you want to delete this post?")) {
+        this.get('content').deleteRecord();
+        this.get('store').commit();
+        return this.transitionToRoute('posts');
+      }
+    },
+    doneEditing: function() {
+      this.set("isEditing", false);
+      return this.get('store').commit();
+    }
   }
 });
 
-var showdown = new Showdown.converter();
-
-Ember.Handlebars.helper('format-markdown', function(input) {
-  return new Handlebars.SafeString(showdown.makeHtml(input));
+AFLT1.IndexRoute = Ember.Route.extend({
+  redirect: function() {
+    return this.transitionTo("posts");
+  }
 });
 
-Ember.Handlebars.helper('format-date', function(date) {
+Ember.Handlebars.registerBoundHelper("date", function(date) {
   return moment(date).fromNow();
+});
+
+window.showdown = new Showdown.converter();
+
+Ember.Handlebars.registerBoundHelper("markdown", function(input) {
+  if (input) {
+    return new Ember.Handlebars.SafeString(window.showdown.makeHtml(input));
+  }
+});
+
+AFLT1.Router.map(function() {
+  this.resource("about");
+  return this.resource("posts", function() {
+    this.resource("post", {
+      path: ":post_id"
+    });
+    return this.route("new");
+  });
 });
